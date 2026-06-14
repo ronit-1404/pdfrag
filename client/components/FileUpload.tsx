@@ -3,6 +3,7 @@ import * as React from "react";
 import { UploadCloud } from "lucide-react";
 
 const FileUpload: React.FC = () => {
+    const [uploadedFiles, setUploadedFiles] = React.useState<string[]>([]);
 
     const handleFileUpload = () => {
         const input = document.createElement("input");
@@ -15,19 +16,20 @@ const FileUpload: React.FC = () => {
                 console.log("Selected file:", file);
             }
         };
-        input.addEventListener('change', (ev) => {
+        input.addEventListener('change', async (ev) => {
             if (input.files && input.files.length > 0) {
                 const file = input.files.item(0);
                 if (file) {
                     const formdata = new FormData()
                     formdata.append('pdf', file)
 
-                    fetch('http://localhost:8000/upload/pdf',
+                    await fetch('http://localhost:8000/upload/pdf',
                         {
                             method: 'POST',
                             body: formdata
                         }
                     );
+                    setUploadedFiles(prev => [...prev, file.name]);
                     console.log("file uploaded")
                 }
             }
@@ -57,9 +59,19 @@ const FileUpload: React.FC = () => {
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">
                     Uploaded Files
                 </h3>
-                <div className="text-sm text-gray-500 italic text-center p-4 bg-white border rounded-lg shadow-sm">
-                    No files uploaded yet.
-                </div>
+                {uploadedFiles.length > 0 ? (
+                    <div className="space-y-2">
+                        {uploadedFiles.map((fileName, index) => (
+                            <div key={index} className="text-sm text-gray-700 p-3 bg-white border rounded-lg shadow-sm">
+                                {fileName}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-sm text-gray-500 italic text-center p-4 bg-white border rounded-lg shadow-sm">
+                        No files uploaded yet.
+                    </div>
+                )}
             </div>
         </div>
     );
