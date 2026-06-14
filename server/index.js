@@ -2,6 +2,12 @@ import express from 'express'
 import cors from 'cors'
 import multer from 'multer'
 import fs from 'fs'
+import { Queue } from "bullmq";
+
+
+
+
+const queue = new Queue("fileuploadqueue")
 
 
 const uploadDir = './uploads';
@@ -28,6 +34,11 @@ app.get('/', (req, res) => {
 })
 
 app.post('/upload/pdf', upload.single('pdf'), (req, res) => {
+    queue.add("file-ready", JSON.stringify({
+        filename: req.file.originalname,
+        destination: req.file.destination,
+        path: req.file.path,
+    }))
     return res.json({ message: 'uploaded successfully' })
 })
 
