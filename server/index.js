@@ -60,7 +60,7 @@ app.post('/upload/pdf', upload.single('pdf'), async (req, res) => {
 
 app.get('/chat', async (req, res) => {
     try {
-        const userquery = 'government'; // Hardcoded for now based on your code
+        const userquery = req.query.message;
 
         const retriever = vectorstore.asRetriever({
             k: 2,
