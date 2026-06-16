@@ -1,19 +1,33 @@
-import express from 'express'
-import cors from 'cors'
-import multer from 'multer'
-import fs from 'fs'
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import multer from 'multer';
+import fs from 'fs';
 import { Queue } from "bullmq";
+import { QdrantVectorStore } from "@langchain/qdrant";
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 
-
-
-
-const queue = new Queue("fileuploadqueue")
-
+const queue = new Queue("fileuploadqueue", {
+    connection: {
+        host: 'localhost',
+        port: 6379
+    }
+});
 
 const uploadDir = './uploads';
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
+
+const embeddings = new GoogleGenerativeAIEmbeddings({
+    model: 'gemini-embedding-2',
+    apiKey: process.env.GOOGLE_API_KEY
+});
+
+const vectorstore = await QdrantVectorStore.fromExistingCollection(embeddings, {
+    url: 'http://localhost:6333',
+    collectionName: "langchainjs-testing"
+});
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -23,23 +37,39 @@ const storage = multer.diskStorage({
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
         cb(null, `${uniqueSuffix}-${file.originalname}`)
     }
-})
+});
 
-const upload = multer({ storage: storage })
-const app = express()
-app.use(cors())
+const upload = multer({ storage: storage });
+const app = express();
+app.use(cors());
 
 app.get('/', (req, res) => {
-    return res.json({ status: 'working' })
-})
+    return res.json({ status: 'working' });
+});
 
-app.post('/upload/pdf', upload.single('pdf'), (req, res) => {
-    queue.add("file-ready", JSON.stringify({
+app.post('/upload/pdf', upload.single('pdf'), async (req, res) => {
+    await queue.add("file-ready", JSON.stringify({
         filename: req.file.originalname,
         destination: req.file.destination,
         path: req.file.path,
-    }))
-    return res.json({ message: 'uploaded successfully' })
-})
+    }));
+    return res.json({ message: 'uploaded successfully' });
+});
 
-app.listen(8000, () => console.log('server started on 8000'))
+app.get('/chat', async (req, res) => {
+    try {
+        const userquery = 'government'; // Hardcoded for now based on your code
+        
+        const retriever = vectorstore.asRetriever({
+            k: 2,
+        });
+        
+        const result = await retriever.invoke(userquery);
+        return res.json({ result });
+    } catch (error) {
+        console.error("Error in /chat:", error);
+        return res.status(500).json({ error: error.message });
+    }
+});
+
+app.listen(8000, () => console.log('server started on 8000'));
