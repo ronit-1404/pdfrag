@@ -17,6 +17,11 @@ const worker = new Worker('fileuploadqueue', async (job) => {
     //pdf loading
     const loader = new PDFLoader(data.path)
     const pdfDocs = await loader.load()
+
+    const client = new QdrantClient({ url: 'http://localhost:6333' });
+    const embedding = new OpenAIEmbeddings({
+        apiKey: process.env.OPENAI_APIKEY
+    });
     console.log(pdfDocs)
 
     //chuking
