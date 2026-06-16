@@ -1,39 +1,54 @@
+import 'dotenv/config';
 import { Worker } from 'bullmq';
 import { QdrantVectorStore } from "@langchain/qdrant";
-import { OpenAIEmbeddings } from "@langchain/openai";
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Document } from "@langchain/core/documents";
-import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf'
-import { CharacterTextSplitter } from '@langchain/textsplitters';
+import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 
 const worker = new Worker('fileuploadqueue', async (job) => {
-    console.log(`JOB:`, job.data)
-    const data = JSON.parse(job.data)
-    //path: data.path
-    //read the pdf from path
-    //chunk the pdf
-    //call the open ai embedding model for every chunk
-    // store the chunk in qdrant db
+    try {
+        console.log(`Processing JOB ${job.id}:`, job.data);
+        const data = typeof job.data === 'string' ? JSON.parse(job.data) : job.data;
 
-    //pdf loading
-    const loader = new PDFLoader(data.path)
-    const pdfDocs = await loader.load()
+        // pdf loading
+        const loader = new PDFLoader(data.path);
+        const pdfDocs = await loader.load();
 
-    const client = new QdrantClient({ url: 'http://localhost:6333' });
-    const embedding = new OpenAIEmbeddings({
-        apiKey: process.env.OPENAI_APIKEY
-    });
-    console.log(pdfDocs)
+        // chunk the pdf
+        const textSplitter = new RecursiveCharacterTextSplitter({
+            chunkSize: 1000,
+            chunkOverlap: 200,
+        });
+        const splitDocs = await textSplitter.splitDocuments(pdfDocs);
+        console.log(`Split document into ${splitDocs.length} chunks.`);
 
-    //chuking
-    const textsplitter = new CharacterTextSplitter({
-        chunkSize: 300,
-        chunkOverlap: 0,
-    })
-    const texts = await textsplitter.splitDocuments(pdfDocs)
-    console.log(texts)
+        // call the google gemini embedding model for every chunk
+        const embeddings = new GoogleGenerativeAIEmbeddings({
+            model: 'gemini-embedding-2',
+            apiKey: process.env.GOOGLE_API_KEY
+        });
+
+        // store the chunk in qdrant db
+        const vectorstore = await QdrantVectorStore.fromExistingCollection(embeddings, {
+            url: 'http://localhost:6333',
+            collectionName: "langchainjs-testing"
+        });
+
+        await vectorstore.addDocuments(splitDocs);
+        console.log(`Successfully added docs to vector store for job ${job.id}`);
+    } catch (error) {
+        console.error("Error processing job:", error);
+        throw error;
+    }
 }, {
-    concurrency: 100, connection: {
+    concurrency: 100,
+    connection: {
         host: 'localhost',
         port: 6379
     }
+});
+
+worker.on('failed', (job, err) => {
+    console.error(`Job ${job?.id} failed with error:`, err);
 });
