@@ -1,3 +1,135 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* ─── Design Tokens ─── */
+@layer base {
+  :root {
+    --pd-bg: #0d0917;
+    --pd-surface: #160f24;
+    --pd-card: #1f1535;
+    --pd-border: #2e1854;
+    --pd-primary: #7c3aed;
+    --pd-secondary: #a855f7;
+    --pd-accent: #c084fc;
+    --pd-text: #f0e8ff;
+    --pd-muted: #8b7aaa;
+  }
+
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    background-color: var(--pd-bg);
+    color: var(--pd-text);
+    font-family: var(--font-inter, Inter, sans-serif);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(124, 58, 237, 0.35);
+    border-radius: 8px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(124, 58, 237, 0.6);
+  }
+}
+
+/* ─── Reusable Component Classes ─── */
+@layer components {
+  .glass-panel {
+    background: rgba(22, 15, 36, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(46, 24, 84, 0.6);
+  }
+
+  .glass-card {
+    background: rgba(31, 21, 53, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(46, 24, 84, 0.4);
+  }
+
+  .glow-text {
+    text-shadow: 0 0 20px rgba(124, 58, 237, 0.6);
+  }
+
+  .glow-box {
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .input-ring:focus-within {
+    box-shadow:
+      0 0 0 1px rgba(124, 58, 237, 0.5),
+      0 0 24px rgba(124, 58, 237, 0.15);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    color: white;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 6px 28px rgba(124, 58, 237, 0.5);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+}
+
+/* ─── Ambient background orbs (fixed, non-interactive) ─── */
+.orb {
+  position: fixed;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(90px);
+  opacity: 0.45;
+}
+
+.orb-1 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.3) 0%, transparent 70%);
+  top: -180px;
+  left: -160px;
+  animation: float-orb 12s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.25) 0%, transparent 70%);
+  bottom: -80px;
+  right: -100px;
+  animation: float-orb 15s ease-in-out 3s infinite;
+}
+
+@keyframes float-orb {
+
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-28px) scale(1.04);
+  }
+}
