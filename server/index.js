@@ -11,12 +11,12 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const queue = new Queue("fileuploadqueue", {
     connection: {
-        host: 'localhost',
-        port: 6379
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379')
     }
 });
 
-const uploadDir = './uploads';
+const uploadDir = process.env.UPLOAD_DIR || './uploads';
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -27,8 +27,8 @@ const embeddings = new GoogleGenerativeAIEmbeddings({
 });
 
 const vectorstore = await QdrantVectorStore.fromExistingCollection(embeddings, {
-    url: 'http://localhost:6333',
-    collectionName: "langchainjs-testing"
+    url: process.env.QDRANT_URL || 'http://localhost:6333',
+    collectionName: process.env.QDRANT_COLLECTION || "langchainjs-testing"
 });
 
 const storage = multer.diskStorage({
@@ -43,7 +43,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: process.env.CORS_ORIGIN || '*'
+}));
 
 app.get('/', (req, res) => {
     return res.json({ status: 'working' });
@@ -92,4 +94,5 @@ app.get('/chat', async (req, res) => {
     }
 });
 
-app.listen(8000, () => console.log('server started on 8000'));
+const PORT = parseInt(process.env.PORT || '8000');
+app.listen(PORT, () => console.log(`server started on ${PORT}`));

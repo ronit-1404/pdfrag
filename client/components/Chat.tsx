@@ -92,11 +92,10 @@ const ChatComponent: React.FC = () => {
 
                         {/* Bubble */}
                         <div
-                            className={`max-w-[76%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                                msg.role === "user"
+                            className={`max-w-[76%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === "user"
                                     ? "bg-gradient-to-br from-[#7c3aed] to-[#a855f7] text-white shadow-[0_4px_18px_rgba(124,58,237,0.3)] rounded-tr-sm"
                                     : "glass-card text-[#f1e8ff] rounded-tl-sm"
-                            }`}
+                                }`}
                         >
                             {msg.content}
                         </div>

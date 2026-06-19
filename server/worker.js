@@ -31,8 +31,8 @@ const worker = new Worker('fileuploadqueue', async (job) => {
 
         // store the chunk in qdrant db
         const vectorstore = await QdrantVectorStore.fromExistingCollection(embeddings, {
-            url: 'http://localhost:6333',
-            collectionName: "langchainjs-testing"
+            url: process.env.QDRANT_URL || 'http://localhost:6333',
+            collectionName: process.env.QDRANT_COLLECTION || "langchainjs-testing"
         });
 
         await vectorstore.addDocuments(splitDocs);
@@ -44,8 +44,8 @@ const worker = new Worker('fileuploadqueue', async (job) => {
 }, {
     concurrency: 100,
     connection: {
-        host: 'localhost',
-        port: 6379
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379')
     }
 });
 
