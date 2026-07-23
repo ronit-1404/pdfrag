@@ -10,11 +10,29 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
-const redisConnection = process.env.REDIS_URL || {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD || undefined
-};
+let redisConnection;
+if (process.env.REDIS_URL) {
+    try {
+        const parsed = new URL(process.env.REDIS_URL);
+        redisConnection = {
+            host: parsed.hostname,
+            port: parseInt(parsed.port || '6379'),
+            username: parsed.username || undefined,
+            password: parsed.password || undefined,
+            tls: parsed.protocol === 'rediss:' ? {} : undefined
+        };
+    } catch (e) {
+        console.error("Failed to parse REDIS_URL:", e);
+    }
+}
+
+if (!redisConnection) {
+    redisConnection = {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD || undefined
+    };
+}
 
 const queue = new Queue("fileuploadqueue", {
     connection: redisConnection
