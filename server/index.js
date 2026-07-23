@@ -11,18 +11,28 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 let redisConnection;
-if (process.env.REDIS_URL) {
+const rawRedisUrl = process.env.REDIS_URL || process.env.REDIS;
+if (rawRedisUrl) {
     try {
-        const parsed = new URL(process.env.REDIS_URL);
+        let cleanUrl = rawRedisUrl;
+        const match = rawRedisUrl.match(/(redis|rediss):\/\/[^\s"]+/);
+        if (match) {
+            cleanUrl = match[0];
+        }
+
+        const parsed = new URL(cleanUrl);
+        const hasTls = rawRedisUrl.includes('--tls') || parsed.protocol === 'rediss:';
+        
         redisConnection = {
             host: parsed.hostname,
             port: parseInt(parsed.port || '6379'),
             username: parsed.username || undefined,
             password: parsed.password || undefined,
-            tls: parsed.protocol === 'rediss:' ? {} : undefined
+            tls: hasTls ? {} : undefined
         };
+        console.log(`Parsed Redis - Host: ${redisConnection.host}, Port: ${redisConnection.port}, TLS: ${!!redisConnection.tls}`);
     } catch (e) {
-        console.error("Failed to parse REDIS_URL:", e);
+        console.error("Failed to parse Redis connection string:", e);
     }
 }
 
