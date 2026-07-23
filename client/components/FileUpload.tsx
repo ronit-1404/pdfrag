@@ -23,7 +23,7 @@ const FileUpload: React.FC = () => {
                     const formdata = new FormData()
                     formdata.append('pdf', file)
 
-                    await fetch('http://localhost:8000/upload/pdf',
+                    await fetch('/upload/pdf',
                         {
                             method: 'POST',
                             body: formdata

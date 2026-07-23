@@ -9,11 +9,15 @@ import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+
+const redisConnection = process.env.REDIS_URL || {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD || undefined
+};
+
 const queue = new Queue("fileuploadqueue", {
-    connection: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379')
-    }
+    connection: redisConnection
 });
 
 const uploadDir = process.env.UPLOAD_DIR || './uploads';
@@ -28,6 +32,7 @@ const embeddings = new GoogleGenerativeAIEmbeddings({
 
 const vectorstore = await QdrantVectorStore.fromExistingCollection(embeddings, {
     url: process.env.QDRANT_URL || 'http://localhost:6333',
+    apiKey: process.env.QDRANT_API_KEY || undefined,
     collectionName: process.env.QDRANT_COLLECTION || "langchainjs-testing"
 });
 
@@ -95,4 +100,14 @@ app.get('/chat', async (req, res) => {
 });
 
 const PORT = parseInt(process.env.PORT || '8000');
-app.listen(PORT, () => console.log(`server started on ${PORT}`));
+app.listen(PORT, async () => {
+    console.log(`server started on ${PORT}`);
+    if (process.env.RUN_WORKER_IN_SERVER !== 'false') {
+        try {
+            await import('./worker.js');
+            console.log('Worker process started inline successfully.');
+        } catch (err) {
+            console.error('Failed to start worker inline:', err);
+        }
+    }
+});

@@ -6,6 +6,12 @@ import { Document } from "@langchain/core/documents";
 import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 
+const redisConnection = process.env.REDIS_URL || {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD || undefined
+};
+
 const worker = new Worker('fileuploadqueue', async (job) => {
     try {
         console.log(`Processing JOB ${job.id}:`, job.data);
@@ -32,6 +38,7 @@ const worker = new Worker('fileuploadqueue', async (job) => {
         // store the chunk in qdrant db
         const vectorstore = await QdrantVectorStore.fromExistingCollection(embeddings, {
             url: process.env.QDRANT_URL || 'http://localhost:6333',
+            apiKey: process.env.QDRANT_API_KEY || undefined,
             collectionName: process.env.QDRANT_COLLECTION || "langchainjs-testing"
         });
 
@@ -43,10 +50,7 @@ const worker = new Worker('fileuploadqueue', async (job) => {
     }
 }, {
     concurrency: 100,
-    connection: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379')
-    }
+    connection: redisConnection
 });
 
 worker.on('failed', (job, err) => {
